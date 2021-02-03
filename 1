@@ -1,0 +1,222 @@
+from operator import itemgetter, attrgetter, methodcaller
+import os
+import openpyxl
+from tkinter.filedialog import *
+
+players_quant = 0
+path = ''
+day = 1
+
+
+
+class Player(object):
+
+    name = ''
+    answers = []
+    diff = []
+    scores = []
+    diff_sum = 0
+    score_sum = 0
+    score_list = [9, 7, 6, 5, 4, 4, 3, 3, 2, 2, 1, 1, 1]
+
+
+    def summ(self):
+        for element in self.diff:
+            self.diff_sum+=element
+        for element in self.scores:
+            self.score_sum += element
+
+
+    def setName(self, name):
+        self.name = name
+
+    def getName(self):
+        try:
+            return self.name
+        except:
+            print("No name")
+
+    def setAnswers(self, answers):
+        self.answers = []
+        for i in answers:
+            self.answers.append(i)
+
+
+    def getAnswers(self):
+        try:
+            return self.answers
+        except:
+            print("No answers")
+
+    def setDiff(self, diff):
+        self.diff = []
+        for i in diff:
+            self.diff.append(i)
+
+    def getDiff(self):
+        try:
+            return self.diff
+        except:
+            print("No diff")
+
+    def setScore(self, score):
+        self.scores = []
+        for i in score:
+            self.scores.append(i)
+
+    def getScore(self):
+        try:
+            return self.scores
+        except:
+            print("No score")
+
+    def excel_extract(self, path, number):
+        book = openpyxl.open(path, read_only=True)
+        sheet = book.active
+        cell1 = 'A' + str(number+3)
+        celln = 'K' + str(number+3)
+        cells = sheet[cell1:celln]
+        answ = list(range(10))
+        for ans in cells:
+            for index, i in enumerate(ans):
+                if index == 0:
+                    self.setName(i.value)
+                else:
+                    answ[index-1] = i.value
+        self.setAnswers(answ)
+        diff_list = []
+        ban_list = list(range(10))
+        ban_cells = sheet['B2':'K2']
+        for ban in ban_cells:
+            for index, i in enumerate(ban):
+                ban_list[index] = i.value
+        for index, answer in enumerate(self.getAnswers()):
+            try:
+                diff_list.append(abs(int(answer)-int(ban_list[index])))
+            except:
+                break
+        self.setDiff(diff_list)
+    @staticmethod
+    def score_compute(*players_list):
+        score_table = [9, 7, 6, 5, 4, 4, 3, 3, 2, 2, 1, 1, 1]
+        score_list = []
+        day_list = []
+        for day in range(11):
+            try:
+                for index, player in enumerate(*players_list):
+                    day_list.append([player.getName(), player.getDiff()[day]])
+                sorted_day_list = sorted(day_list, key=itemgetter(1))
+                day_list.clear()
+                for index, player in enumerate(sorted_day_list):
+                    if index>0:
+                        if sorted_day_list[index][1] == sorted_day_list[index-1][1]:
+                            player.append(sorted_day_list[index-1][2])
+                        else:
+                            player.append(score_table[index])
+                    player.append(score_table[index])
+                for index, player in enumerate(sorted(sorted_day_list, key=itemgetter(0))):
+                    if day == 0:
+                        score_list.append([player[2]])
+                    else:
+                        score_list[index].append(player[2])
+                sorted_day_list.clear()
+            except:
+                break
+        return score_list
+
+def player_create(n):
+        players_list = [Player() for i in range(n)]
+        return players_list
+
+def open_file():
+    path = askopenfilename(filetypes=[("Таблицы", "*.xlsx"), ("Все файлы", "*.*")])
+    book = openpyxl.open(path, read_only=True)
+    sheet = book.active
+    k = 3
+    while True:
+        if sheet['A' + str(k)].value == None:
+            break
+        k += 1
+    return path, k
+
+def excel_extract():
+    day_list = []
+    book = openpyxl.open(path, read_only=True)
+    sheet = book.active
+    k=3
+    while True:
+        if sheet['A'+str(k)] == 0:
+            break
+        k+=1
+    cell1 = 'A3'
+    celln = 'K' + str(k-1)
+    cells = sheet[cell1:celln]
+    answers = list(range(10))
+    for name, answers[0], answers[1], answers[2], answers[3], answers[4], answers[5], answers[6], answers[7], answers[8], answers[9] in cells:
+        day_list.append([name.value, answers[day-1].value])
+    for i in range(len(day_list)):
+        for j in range(3):
+            day_list[i].append(0)
+    return day_list, path
+
+
+# players_list, path = excel_extract()
+# print('1')
+# for i in players_list:
+#     print(i)
+#
+# daily_count = daily_counter(4, players_list)
+# print('2')
+# for i in daily_count:
+#     print(i)
+
+
+# champ_count = championship_counter(1, daily_count)
+# print('3')
+# for i in champ_count:
+#     print(i)
+
+# window = Tk()
+# window.title("Banana game")
+#
+# fr = Frame(window, relief=RAISED, bd=2)
+# lbl = Label(fr, text="Введите количество участников")
+# lbl.grid(column=0, row=0, sticky="ew", padx=5)
+# txt = Entry(fr, width=10)
+# txt.grid(column=1, row=0, sticky="ew", padx=5)
+# lbl_day = Label(fr, text="Введите номер игрового дня")
+# lbl_day.grid(column=0, row=1, sticky="ew", padx=5)
+# txt_day = Entry(fr, width=10)
+# txt_day.grid(column=1, row=1, sticky="ew", padx=5)
+# #
+# fr2 = Frame(window, relief=RAISED, bd=2)
+# btn_open = Button(fr2, text="выбрать таблицу с ответами", command=open_file)
+# btn_open.grid(column=0, row=0)
+# lbl_open = Label(fr2, text="файл не выбран")
+# lbl_open.grid(column=1, row=0)
+# btn_count = Button(window, text="посчитать", command=count)
+#
+# fr.grid(row=0, column=0, sticky="nsew", padx=5, pady=15)
+# fr2.grid(row=1, column=0, sticky="nsew", padx=5, pady=15)
+# btn_count.grid(row=2, column=0, sticky="nsew", padx=5)
+#
+# window.mainloop
+
+path, k = open_file()
+players_list = player_create(k-3)
+for index, player in enumerate(players_list):
+    player.excel_extract(path, index)
+score_list = Player.score_compute(players_list)
+for index, player in enumerate(players_list):
+    player.setScore(score_list[index])
+for i in players_list:
+    i.summ()
+    # print(i.getName(), i.getAnswers(), i.getDiff(), i.diff_sum, i.getScore(), i.score_sum)
+sorted_by_diffSum = sorted(players_list, key=attrgetter('diff_sum'))
+sorted_by_scoreSum = sorted(players_list, key=attrgetter('score_sum'), reverse=True)
+print('ScoreSum')
+for i in sorted_by_scoreSum:
+    print(i.getName(), i.getAnswers(), i.getDiff(), i.diff_sum, i.getScore(), i.score_sum)
+print('DiffSum')
+for i in sorted_by_diffSum:
+    print(i.getName(), i.getAnswers(), i.getDiff(), i.diff_sum, i.getScore(), i.score_sum)
